@@ -1,0 +1,9 @@
+backend/node_modules/
+backend/.env
+.git-local/
+frontend/assets/images/*.tmp
+node_modules/
+.env
+npm-debug.log*
+Thumbs.db
+.DS_Store
