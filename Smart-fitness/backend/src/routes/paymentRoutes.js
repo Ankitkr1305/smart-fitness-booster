@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const express = require("express");
+const QRCode = require("qrcode");
 const Payment = require("../models/Payment");
 
 const router = express.Router();
@@ -20,6 +21,32 @@ function hasRazorpayKeys() {
 
 function createDemoOrderId() {
   return `order_demo_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+}
+
+function createUpiOrderId() {
+  return `order_upi_${Date.now()}_${crypto.randomBytes(4).toString("hex")}`;
+}
+
+function getUpiConfig() {
+  return {
+    upiId: process.env.UPI_ID || "ankitkr1305@oksbi",
+    payeeName: process.env.UPI_PAYEE_NAME || "Ankit Verma",
+    note: process.env.UPI_NOTE || "Smart Tracker Booster Plan"
+  };
+}
+
+function buildUpiPaymentLink({ amount, orderId, planName }) {
+  const { upiId, payeeName, note } = getUpiConfig();
+  const params = new URLSearchParams({
+    pa: upiId,
+    pn: payeeName,
+    am: amount.toFixed(2),
+    cu: "INR",
+    tn: `${note} - ${planName}`,
+    tr: orderId
+  });
+
+  return `upi://pay?${params.toString()}`;
 }
 
 async function createRazorpayOrder(plan) {
@@ -46,10 +73,103 @@ async function createRazorpayOrder(plan) {
 }
 
 router.get("/config", (req, res) => {
+  const upiConfig = getUpiConfig();
   res.json({
     keyId: process.env.RAZORPAY_KEY_ID || "",
-    demoMode: !hasRazorpayKeys()
+    demoMode: !hasRazorpayKeys(),
+    upiId: upiConfig.upiId,
+    upiPayeeName: upiConfig.payeeName
   });
+});
+
+router.post("/create-upi-qr", async (req, res) => {
+  try {
+    const { planKey, customerName, customerEmail } = req.body;
+    const plan = getPlan(planKey);
+
+    if (!plan) {
+      return res.status(400).json({ message: "Invalid plan selected" });
+    }
+
+    const orderId = createUpiOrderId();
+    const upiLink = buildUpiPaymentLink({
+      amount: plan.amount,
+      orderId,
+      planName: plan.name
+    });
+    const qrCodeDataUrl = await QRCode.toDataURL(upiLink, {
+      width: 280,
+      margin: 1
+    });
+    const upiConfig = getUpiConfig();
+
+    await Payment.create({
+      plan: plan.name,
+      amount: plan.amount,
+      customerName: customerName || "Guest",
+      customerEmail: customerEmail || "",
+      orderId,
+      gateway: "upi",
+      mode: "upi_qr",
+      status: "pending",
+      upiLink,
+      qrCodeDataUrl,
+      rawResponse: {
+        upiId: upiConfig.upiId,
+        upiPayeeName: upiConfig.payeeName
+      }
+    });
+
+    res.json({
+      message: "QR generated successfully",
+      payment: {
+        orderId,
+        plan: plan.name,
+        amount: plan.amount,
+        qrCodeDataUrl,
+        upiLink,
+        upiId: upiConfig.upiId,
+        upiPayeeName: upiConfig.payeeName
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Unable to generate UPI QR", error: error.message });
+  }
+});
+
+router.post("/confirm-upi", async (req, res) => {
+  try {
+    const { orderId, utrNumber } = req.body;
+
+    if (!orderId || !utrNumber) {
+      return res.status(400).json({ message: "Order ID and UTR number are required" });
+    }
+
+    const payment = await Payment.findOneAndUpdate(
+      { orderId, mode: "upi_qr" },
+      {
+        status: "paid",
+        paymentId: utrNumber,
+        utrNumber,
+        rawResponse: {
+          confirmedAt: new Date(),
+          utrNumber
+        }
+      },
+      { new: true }
+    );
+
+    if (!payment) {
+      return res.status(404).json({ message: "UPI payment request not found" });
+    }
+
+    res.json({
+      message: "UPI payment marked as received",
+      payment
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Unable to confirm UPI payment", error: error.message });
+  }
 });
 
 router.post("/create-order", async (req, res) => {

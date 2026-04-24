@@ -4,12 +4,9 @@ const range = document.querySelector("#habitRange");
 const scoreValue = document.querySelector("#scoreValue");
 const minuteValue = document.querySelector("#minuteValue");
 const navbar = document.querySelector(".navbar");
-let API_BASE_URL = "";
-if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
-    if (window.location.port !== "5000" && window.location.port !== "") {
-        API_BASE_URL = "http://localhost:5000";
-    }
-}
+const API_BASE_URL = window.location.hostname.includes("vercel.app")
+    ? "https://smart-fitness-booster-api.vercel.app"
+    : "";
 const STATIC_PAYMENT_QR = "assets/images/payment-qr.jpeg";
 
 if (menuToggle) {

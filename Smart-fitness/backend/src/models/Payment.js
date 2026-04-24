@@ -29,7 +29,7 @@ const paymentSchema = new mongoose.Schema(
     },
     mode: {
       type: String,
-      enum: ["demo", "razorpay"],
+      enum: ["demo", "razorpay", "upi_qr"],
       default: "demo"
     },
     orderId: {
@@ -42,8 +42,20 @@ const paymentSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["created", "paid", "failed"],
+      enum: ["created", "pending", "paid", "failed"],
       default: "created"
+    },
+    upiLink: {
+      type: String,
+      default: ""
+    },
+    qrCodeDataUrl: {
+      type: String,
+      default: ""
+    },
+    utrNumber: {
+      type: String,
+      default: ""
     },
     rawResponse: {
       type: mongoose.Schema.Types.Mixed,
