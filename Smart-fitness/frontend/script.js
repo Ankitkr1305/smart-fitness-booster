@@ -5,10 +5,14 @@ const scoreValue = document.querySelector("#scoreValue");
 const minuteValue = document.querySelector("#minuteValue");
 const navbar = document.querySelector(".navbar");
 let API_BASE_URL = "";
-if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
+if (window.location.hostname.endsWith("vercel.app")) {
+    API_BASE_URL = "https://smart-fitness-booster-api.vercel.app";
+} else if (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1") {
     if (window.location.port !== "5000" && window.location.port !== "") {
         API_BASE_URL = "http://localhost:5000";
     }
+} else if (window.location.protocol === "file:") {
+    API_BASE_URL = "http://localhost:5000";
 }
 const STATIC_PAYMENT_QR = "assets/images/payment-qr.jpeg";
 
@@ -98,7 +102,12 @@ async function apiRequest(path, options = {}) {
         },
         ...options
     });
-    const data = await response.json();
+    let data;
+    try {
+        data = await response.json();
+    } catch (error) {
+        data = { message: "Server response is invalid. Please restart server." };
+    }
 
     if (!response.ok) {
         throw new Error(data.message || "Something went wrong");
@@ -259,6 +268,15 @@ function setButtonLoading(button, isLoading, loadingText = "Processing...") {
     button.disabled = false;
     button.classList.remove("is-loading");
     button.textContent = button.dataset.originalText || button.textContent;
+}
+
+async function withButtonLoading(button, action, loadingText = "Working...") {
+    try {
+        setButtonLoading(button, true, loadingText);
+        return await action();
+    } finally {
+        setButtonLoading(button, false);
+    }
 }
 
 function resetQrPaymentState() {
@@ -492,6 +510,201 @@ function updateText(selector, value) {
     }
 }
 
+function setInputValue(selector, value, fallback = "") {
+    const element = document.querySelector(selector);
+    if (!element) {
+        return;
+    }
+
+    element.value = value !== undefined && value !== null && value !== "" ? value : fallback;
+}
+
+function getInputValue(selector) {
+    return document.querySelector(selector)?.value?.trim() || "";
+}
+
+let currentDashboardData = null;
+
+function toTitleCase(value) {
+    return String(value || "")
+        .toLowerCase()
+        .split(" ")
+        .filter(Boolean)
+        .map((item) => item.charAt(0).toUpperCase() + item.slice(1))
+        .join(" ");
+}
+
+function calculateBmi(height, weight) {
+    const numericHeight = Number(height || 0);
+    const numericWeight = Number(weight || 0);
+    if (!numericHeight || !numericWeight) {
+        return null;
+    }
+
+    const meters = numericHeight / 100;
+    if (!meters) {
+        return null;
+    }
+
+    return Number((numericWeight / (meters * meters)).toFixed(1));
+}
+
+function calculateProfileComplete(preferences = {}) {
+    return Boolean(
+        Number(preferences.currentWeight) &&
+        Number(preferences.height) &&
+        preferences.activityLevel &&
+        preferences.primaryChallenge &&
+        preferences.workoutTime &&
+        Number(preferences.availableMinutes) &&
+        Number(preferences.workoutDays) &&
+        Number(preferences.hydrationGoal)
+    );
+}
+
+function buildFallbackProfileInsights(preferences = {}) {
+    const currentWeight = Number(preferences.currentWeight || 0) || null;
+    const targetWeight = Number(preferences.targetWeight || 0) || null;
+    const height = Number(preferences.height || 0) || null;
+    const bmi = calculateBmi(height, currentWeight);
+    const weightChange = currentWeight && targetWeight ? Number((targetWeight - currentWeight).toFixed(1)) : null;
+
+    let paceLabel = "Steady plan";
+    if (weightChange !== null) {
+        paceLabel =
+            weightChange < 0 ? `${Math.abs(weightChange)} kg to lose` :
+            weightChange > 0 ? `${weightChange} kg to gain` :
+            "Weight maintenance";
+    }
+
+    const sleepHours = Number(preferences.sleepHours || 0) || null;
+    const recoveryLabel =
+        sleepHours >= 8 ? "Recovery-friendly sleep target" :
+        sleepHours >= 6 ? "Moderate recovery target" :
+        "Sleep target needs support";
+
+    return {
+        currentWeight,
+        targetWeight,
+        height,
+        bmi,
+        weightChange,
+        paceLabel,
+        recoveryLabel,
+        activityLevel: preferences.activityLevel || "Not set",
+        equipmentAccess: preferences.equipmentAccess || "Not set",
+        primaryChallenge: preferences.primaryChallenge || "Not set",
+        sleepHours
+    };
+}
+
+function shiftTimeLabel(timeValue, minuteOffset) {
+    const [hours = "07", minutes = "00"] = String(timeValue || "07:00").split(":");
+    const totalMinutes = Number(hours) * 60 + Number(minutes) + minuteOffset;
+    const normalized = ((totalMinutes % 1440) + 1440) % 1440;
+    return `${String(Math.floor(normalized / 60)).padStart(2, "0")}:${String(normalized % 60).padStart(2, "0")}`;
+}
+
+function buildFallbackAiPlan(data) {
+    const preferences = data.user?.preferences || {};
+    const nutrition = data.nutrition || { calories: 0 };
+    const workoutTitle = data.workoutTitle || `${toTitleCase(preferences.preferredWorkout || "Strength")} session`;
+    const wakeTime = preferences.wakeTime || "07:00";
+    const workoutTime = preferences.workoutTime || "18:00";
+    const sleepTime = preferences.sleepTime || "22:30";
+    const dietaryPreference = preferences.dietaryPreference || preferences.mealPreference || "Balanced";
+    const focusArea = preferences.focusArea || preferences.preferredWorkout || "General fitness";
+
+    const meals = dietaryPreference === "Vegetarian"
+        ? [
+            { title: "Breakfast", time: shiftTimeLabel(wakeTime, 45), detail: "Oats or poha with curd / fruit." },
+            { title: "Lunch", time: "13:30", detail: "Dal, roti, sabzi, paneer or soy-based protein." },
+            { title: "Snack", time: shiftTimeLabel(workoutTime, -60), detail: "Curd, chana, banana, or lassi for workout fuel." },
+            { title: "Dinner", time: shiftTimeLabel(workoutTime, 90), detail: "Light protein-focused meal with vegetables." }
+        ]
+        : [
+            { title: "Breakfast", time: shiftTimeLabel(wakeTime, 45), detail: "Eggs or oats with fruit and hydration." },
+            { title: "Lunch", time: "13:30", detail: "Protein-heavy lunch with balanced carbs." },
+            { title: "Snack", time: shiftTimeLabel(workoutTime, -60), detail: "High-protein snack before training." },
+            { title: "Dinner", time: shiftTimeLabel(workoutTime, 90), detail: "Recovery meal with protein and vegetables." }
+        ];
+
+    return {
+        headline: `${data.user?.name || "Athlete"}, your AI-managed day is built from your saved inputs`,
+        summary: `The dashboard is following your ${String(data.user?.goal || "fitness").toLowerCase()} goal, ${preferences.activityLevel || "custom"} activity level, and main challenge: ${preferences.primaryChallenge || "not set"}.`,
+        meals,
+        schedule: [
+            { time: wakeTime, title: "Wake and reset", detail: "Water, light mobility, and body check." },
+            { time: meals[0].time, title: meals[0].title, detail: meals[0].detail },
+            { time: "11:30", title: "Focus / posture reset", detail: "2-minute stretch and water break." },
+            { time: meals[1].time, title: meals[1].title, detail: meals[1].detail },
+            { time: meals[2].time, title: meals[2].title, detail: meals[2].detail },
+            { time: workoutTime, title: workoutTitle, detail: `${preferences.availableMinutes || 38} min ${String(focusArea).toLowerCase()} block` },
+            { time: meals[3].time, title: meals[3].title, detail: meals[3].detail },
+            { time: sleepTime, title: "Sleep wind-down", detail: "Screen down, calm down, recovery on." }
+        ],
+        recoveryItems: [
+            `Aim for ${preferences.sleepHours || 7} hours sleep with a proper wind-down.`,
+            "Do a short stretch or walk after long sitting blocks.",
+            "Spread hydration through the day instead of catching up late.",
+            `Use stress control cues because your current stress level is ${preferences.stressLevel || "not set"}.`
+        ],
+        focusArea,
+        stepGoal: Number(preferences.stepGoal || 9000),
+        caloriesTarget: nutrition.calories || 0
+    };
+}
+
+function getLatestPreferenceSnapshot(events = []) {
+    const latestPreferenceEvent = events.find((event) => event.eventType === "preferences_update");
+    return {
+        goal: latestPreferenceEvent?.payload?.goal || "",
+        preferences: latestPreferenceEvent?.payload?.preferences || {}
+    };
+}
+
+function normalizeDashboardData(rawData) {
+    const data = { ...rawData };
+    const latestPreferenceSnapshot = getLatestPreferenceSnapshot(data.dashboardEvents || []);
+    const preferences = {
+        ...(data.user?.preferences || {}),
+        ...(latestPreferenceSnapshot.preferences || {})
+    };
+    data.user = { ...(data.user || {}), preferences };
+    data.user.goal = latestPreferenceSnapshot.goal || data.user.goal;
+
+    const profileComplete =
+        typeof data.profileComplete === "boolean"
+            ? data.profileComplete
+            : !data.needsPreferences && calculateProfileComplete(preferences);
+
+    data.profileComplete = profileComplete;
+    data.needsPreferences = typeof data.needsPreferences === "boolean" ? data.needsPreferences : !profileComplete;
+    data.profileInsights = data.profileInsights || buildFallbackProfileInsights(preferences);
+    data.habitSignals = data.habitSignals || [
+        { label: "Hydration", value: `${preferences.hydrationGoal || 3}L daily hydration target` },
+        {
+            label: "Recovery",
+            value: data.profileInsights.sleepHours
+                ? `${data.profileInsights.sleepHours}h planned sleep`
+                : "Set your sleep target for sharper recovery"
+        },
+        {
+            label: "Constraint",
+            value: preferences.primaryChallenge
+                ? `Main blocker: ${preferences.primaryChallenge}`
+                : "Add your main challenge for tighter advice"
+        }
+    ];
+    data.aiPlan = {
+        ...buildFallbackAiPlan(data),
+        ...(data.aiPlan || {}),
+        caloriesTarget: data.aiPlan?.caloriesTarget || data.nutrition?.calories || 0
+    };
+
+    return data;
+}
+
 function escapeHtml(value) {
     return String(value)
         .replaceAll("&", "&amp;")
@@ -541,6 +754,40 @@ function saveDashboardState(nextState) {
     localStorage.setItem("smartDashboardState", JSON.stringify({ ...current, ...nextState }));
 }
 
+function syncStateFromMongoEvents(events) {
+    if (!events || !events.length) return;
+    
+    const currentState = getDashboardState();
+    const nextState = { ...currentState };
+    let hasUpdates = false;
+
+    const sortedEvents = [...events].reverse();
+    
+    sortedEvents.forEach(event => {
+        const payload = event.payload || {};
+        
+        if (event.eventType === "mood_update" && payload.mood) {
+            nextState.mood = payload.mood;
+            hasUpdates = true;
+        } else if (event.eventType === "hydration_update" && payload.glasses !== undefined) {
+            nextState.waterCount = payload.glasses;
+            hasUpdates = true;
+        } else if (event.eventType === "readiness_update") {
+            if (payload.energy !== undefined) nextState.energy = payload.energy;
+            if (payload.focus !== undefined) nextState.focus = payload.focus;
+            if (payload.recovery !== undefined) nextState.recovery = payload.recovery;
+            hasUpdates = true;
+        } else if (event.eventType === "streak_map_update" && Array.isArray(payload.activeDays)) {
+            nextState.activeWeekDays = payload.activeDays.length;
+            hasUpdates = true;
+        }
+    });
+
+    if (hasUpdates) {
+        localStorage.setItem("smartDashboardState", JSON.stringify(nextState));
+    }
+}
+
 function scrollToPanel(selector) {
     const panel = document.querySelector(selector);
     if (!panel) {
@@ -553,7 +800,15 @@ function scrollToPanel(selector) {
 }
 
 function renderDashboard(data) {
+    data = normalizeDashboardData(data);
+    currentDashboardData = data;
+    
+    if (data.dashboardEvents) {
+        syncStateFromMongoEvents(data.dashboardEvents);
+    }
+    
     updateText("#dashboardUserName", data.user.name);
+    updateText("#assistantEngineLabel", data.aiSource || "Smart AI");
     updateText(
         "#dashboardIntro",
         `Your current goal is "${data.user.goal}" on the ${data.user.plan} plan. Track your score, workout, nutrition, schedule, recovery, and achievements here.`
@@ -618,27 +873,275 @@ function renderDashboard(data) {
             .join("");
     }
 
+    renderProfileSnapshot(data);
+    renderCompletionPanel(data);
+    renderTargetsPanel(data);
     renderMongoEventTable(data.dashboardEvents || []);
 
-    const plannerForm = document.querySelector("#plannerForm");
-    if (plannerForm && data.user.preferences) {
-        plannerForm.goal.value = data.user.goal || "Stay active";
-        plannerForm.preferredWorkout.value = data.user.preferences.preferredWorkout || "Strength";
-        plannerForm.experienceLevel.value = data.user.preferences.experienceLevel || "Beginner";
-        plannerForm.mealPreference.value = data.user.preferences.mealPreference || "Balanced";
-        plannerForm.wakeTime.value = data.user.preferences.wakeTime || "07:00";
-        plannerForm.workoutTime.value = data.user.preferences.workoutTime || "18:00";
-        plannerForm.sleepTime.value = data.user.preferences.sleepTime || "22:30";
-        plannerForm.availableMinutes.value = data.user.preferences.availableMinutes || 38;
-        plannerForm.workoutDays.value = data.user.preferences.workoutDays || 4;
-        plannerForm.hydrationGoal.value = data.user.preferences.hydrationGoal || 3;
+    if (data.user.preferences) {
+        setInputValue("#plannerGoal", data.user.goal, "Stay active");
+        setInputValue("#plannerWorkout", data.user.preferences.preferredWorkout, "Strength");
+        setInputValue("#plannerExperience", data.user.preferences.experienceLevel, "Beginner");
+        setInputValue("#plannerMealPreference", data.user.preferences.mealPreference, "Balanced");
+        setInputValue("#plannerAge", data.user.preferences.age);
+        setInputValue("#plannerOccupation", data.user.preferences.occupation);
+        setInputValue("#plannerWakeTime", data.user.preferences.wakeTime, "07:00");
+        setInputValue("#plannerWorkoutTime", data.user.preferences.workoutTime, "18:00");
+        setInputValue("#plannerSleepTime", data.user.preferences.sleepTime, "22:30");
+        setInputValue("#plannerMinutes", data.user.preferences.availableMinutes, 38);
+        setInputValue("#plannerDays", data.user.preferences.workoutDays, 4);
+        setInputValue("#plannerHydration", data.user.preferences.hydrationGoal, 3);
+        setInputValue("#plannerCurrentWeight", data.user.preferences.currentWeight);
+        setInputValue("#plannerTargetWeight", data.user.preferences.targetWeight);
+        setInputValue("#plannerHeight", data.user.preferences.height);
+        setInputValue("#plannerSleepHours", data.user.preferences.sleepHours);
+        setInputValue("#plannerDietaryPreference", data.user.preferences.dietaryPreference);
+        setInputValue("#plannerSchedulePreference", data.user.preferences.schedulePreference);
+        setInputValue("#plannerStressLevel", data.user.preferences.stressLevel);
+        setInputValue("#plannerStepGoal", data.user.preferences.stepGoal);
+        setInputValue("#plannerActivityLevel", data.user.preferences.activityLevel);
+        setInputValue("#plannerFocusArea", data.user.preferences.focusArea);
+        setInputValue("#plannerEquipment", data.user.preferences.equipmentAccess);
+        setInputValue("#plannerChallenge", data.user.preferences.primaryChallenge);
     }
 
     if (data.needsPreferences) {
         openModal("#plannerModal");
     }
 
+    renderAssistantGuidance(data);
     hydrateEnhancedDashboard(data);
+}
+
+function renderCompletionPanel(data) {
+    const preferences = data.user?.preferences || {};
+    const checks = [
+        { label: "Body stats", done: Boolean(Number(preferences.currentWeight) && Number(preferences.height)) },
+        { label: "Workout timing", done: Boolean(preferences.workoutTime && Number(preferences.availableMinutes)) },
+        { label: "Routine days", done: Boolean(Number(preferences.workoutDays) && preferences.activityLevel) },
+        { label: "Recovery basics", done: Boolean(Number(preferences.hydrationGoal)) },
+        { label: "Main challenge", done: Boolean(preferences.primaryChallenge) }
+    ];
+    const percent = Math.round((checks.filter((item) => item.done).length / checks.length) * 100);
+    const fill = document.querySelector("#completionMeterFill");
+
+    updateText("#completionStatus", `${percent}% complete`);
+    updateText(
+        "#completionNote",
+        data.profileComplete
+            ? "Your dashboard is now running on your saved profile, schedule, and real-world constraints."
+            : "Finish the missing planner groups below so the assistant and dashboard stop relying on fallback defaults."
+    );
+
+    if (fill) {
+        fill.style.width = `${percent}%`;
+    }
+
+    const checklist = document.querySelector("#completionChecklist");
+    if (checklist) {
+        checklist.innerHTML = checks
+            .map((item) => `<span class="${item.done ? "is-complete" : ""}">${escapeHtml(item.label)} ${item.done ? "done" : "pending"}</span>`)
+            .join("");
+        aiMealGrid.innerHTML = aiMealGrid.innerHTML.replaceAll("Â·", " - ").replaceAll("·", " - ");
+    }
+}
+
+function renderTargetsPanel(data) {
+    const preferences = data.user?.preferences || {};
+    const targets = [
+        { label: "Workout", value: `${preferences.availableMinutes || 38} min at ${preferences.workoutTime || "18:00"}` },
+        { label: "Hydration", value: `${preferences.hydrationGoal || 3}L target` },
+        { label: "Sleep", value: `${preferences.sleepHours || 7}h target` },
+        { label: "Steps", value: `${Number(preferences.stepGoal || data.aiPlan?.stepGoal || 9000).toLocaleString("en-IN")}` }
+    ];
+
+    updateText("#targetsFocusLabel", data.aiPlan?.focusArea || preferences.focusArea || "Daily focus");
+    updateText(
+        "#targetsNote",
+        data.profileComplete
+            ? `Built around your ${preferences.primaryChallenge || "current routine"} challenge and ${preferences.activityLevel || "custom"} activity level.`
+            : "Targets will become more accurate after you complete the full planner."
+    );
+
+    const targetsGrid = document.querySelector("#targetsGrid");
+    if (targetsGrid) {
+        targetsGrid.innerHTML = targets
+            .map((item) => `<div><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>`)
+            .join("");
+    }
+}
+
+function renderAiPlan(data) {
+    updateText("#aiFocusArea", data.aiPlan?.focusArea || "General fitness");
+    updateText("#aiCaloriesTarget", data.aiPlan?.caloriesTarget ? `${data.aiPlan.caloriesTarget} kcal` : "0 kcal");
+
+    const aiScheduleList = document.querySelector("#aiScheduleList");
+    if (aiScheduleList) {
+        aiScheduleList.innerHTML = (data.aiPlan?.schedule || [])
+            .map(
+                (item) =>
+                    `<div><time>${escapeHtml(item.time)}</time><span><strong>${escapeHtml(item.title)}</strong>${escapeHtml(item.detail)}</span></div>`
+            )
+            .join("");
+    }
+
+    const aiMealGrid = document.querySelector("#aiMealGrid");
+    if (aiMealGrid) {
+        const sanitizeMealGrid = () => {
+            aiMealGrid.innerHTML = aiMealGrid.innerHTML.replace(/\u00c2?\u00b7/g, " - ");
+        };
+        window.setTimeout(sanitizeMealGrid, 0);
+        aiMealGrid.innerHTML = (data.aiPlan?.meals || [])
+            .map(
+                (item) =>
+                    `<div><strong>${escapeHtml(item.title)} · ${escapeHtml(item.time)}</strong><span>${escapeHtml(item.detail)}</span></div>`
+            )
+            .join("");
+    }
+}
+
+function renderProfileSnapshot(data) {
+    updateText("#profileStatus", data.profileComplete ? "Profile ready" : "Profile incomplete");
+    updateText(
+        "#profileSummary",
+        data.profileComplete
+            ? "Your assistant is now using your real body stats, activity level, equipment access, and main challenge."
+            : "Add your body stats, activity level, equipment, and main challenge so recommendations match your real routine."
+    );
+    updateText("#recoveryLabel", data.profileInsights?.recoveryLabel || "Set your profile");
+    updateText("#paceLabel", data.profileInsights?.paceLabel || "Plan pace pending");
+    updateText("#activityLevelLabel", data.profileInsights?.activityLevel || "Activity level pending");
+    updateText("#equipmentLabel", data.profileInsights?.equipmentAccess || "Equipment not selected");
+
+    const profileFacts = document.querySelector("#profileFacts");
+    if (profileFacts) {
+        profileFacts.innerHTML = `
+            <div><span>Current weight</span><strong>${data.profileInsights?.currentWeight ? `${escapeHtml(data.profileInsights.currentWeight)} kg` : "Not set"}</strong></div>
+            <div><span>Target weight</span><strong>${data.profileInsights?.targetWeight ? `${escapeHtml(data.profileInsights.targetWeight)} kg` : "Not set"}</strong></div>
+            <div><span>Height</span><strong>${data.profileInsights?.height ? `${escapeHtml(data.profileInsights.height)} cm` : "Not set"}</strong></div>
+            <div><span>BMI</span><strong>${data.profileInsights?.bmi ? escapeHtml(data.profileInsights.bmi) : "Pending"}</strong></div>
+        `;
+    }
+
+    const habitSignalGrid = document.querySelector("#habitSignalGrid");
+    if (habitSignalGrid) {
+        habitSignalGrid.innerHTML = (data.habitSignals || [])
+            .map((item) => `<div><span>${escapeHtml(item.label)}</span><strong>${escapeHtml(item.value)}</strong></div>`)
+            .join("");
+    }
+
+    renderPlanSync(data);
+    renderRoadmap(data);
+    renderAiPlan(data);
+}
+
+function formatDateTime(value) {
+    if (!value) {
+        return "Not saved yet";
+    }
+
+    try {
+        return new Date(value).toLocaleString("en-IN", {
+            day: "2-digit",
+            month: "short",
+            hour: "2-digit",
+            minute: "2-digit"
+        });
+    } catch (error) {
+        return "Not saved yet";
+    }
+}
+
+function renderPlanSync(data) {
+    updateText("#planSyncStatus", data.profileComplete ? "Profile synced" : "Awaiting inputs");
+    updateText(
+        "#syncNote",
+        data.profileComplete
+            ? "Your latest planner inputs are active, and the assistant is now following them."
+            : "Complete the missing profile fields so your dashboard can fully sync with your real routine."
+    );
+
+    const latestPreferenceSave = (data.dashboardEvents || []).find((event) => event.eventType === "preferences_update");
+    const syncGrid = document.querySelector("#syncGrid");
+    if (!syncGrid) {
+        return;
+    }
+
+    syncGrid.innerHTML = `
+        <div><span>Workout slot</span><strong>${escapeHtml(data.user.preferences.workoutTime || "Not set")}</strong></div>
+        <div><span>Meal style</span><strong>${escapeHtml(data.user.preferences.dietaryPreference || data.user.preferences.mealPreference || "Not set")}</strong></div>
+        <div><span>Main challenge</span><strong>${escapeHtml(data.user.preferences.primaryChallenge || "Not set")}</strong></div>
+        <div><span>Last profile save</span><strong>${escapeHtml(formatDateTime(latestPreferenceSave?.createdAt))}</strong></div>
+    `;
+}
+
+function renderRoadmap(data) {
+    const roadmap = [];
+    const preferences = data.user.preferences || {};
+    const aiPlan = data.aiPlan || {};
+
+    if (!data.profileComplete) {
+        roadmap.push(
+            { title: "Complete your profile", detail: "Add body stats, activity level, equipment, and challenge first." },
+            { title: "Save your planner", detail: "Once saved, the dashboard will reflect your real constraints." },
+            { title: "Refresh the assistant", detail: "Then the AI will guide you from your own inputs only." }
+        );
+    } else {
+        roadmap.push({
+            title: `Protect ${preferences.workoutTime || "your workout"} slot`,
+            detail: `${preferences.availableMinutes || 0} minutes is your current training window. Start on time.`
+        });
+        roadmap.push({
+            title: `Work around ${preferences.primaryChallenge || "your main blocker"}`,
+            detail: aiPlan.actionItems?.[0] || `Your suggestions are now filtered through "${preferences.primaryChallenge || "your current challenge"}".`
+        });
+        roadmap.push({
+            title: `Use your ${preferences.equipmentAccess || "selected equipment"} setup well`,
+            detail: aiPlan.actionItems?.[1] || `The workout and assistant are adapting to your chosen equipment access.`
+        });
+    }
+
+    updateText("#roadmapStatus", data.profileComplete ? "Profile-based" : "Needs profile");
+
+    const roadmapList = document.querySelector("#roadmapList");
+    if (!roadmapList) {
+        return;
+    }
+
+    roadmapList.innerHTML = roadmap
+        .map((item) => `<div><strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(item.detail)}</span></div>`)
+        .join("");
+}
+
+function highlightPlannerFields(fields = []) {
+    document.querySelectorAll("#plannerForm input, #plannerForm select").forEach((element) => {
+        element.classList.remove("input-error");
+    });
+
+    fields.forEach((selector) => {
+        document.querySelector(selector)?.classList.add("input-error");
+    });
+}
+
+function validatePlannerForm() {
+    const fieldMap = [
+        { selector: "#plannerGoal", label: "Goal" },
+        { selector: "#plannerWorkout", label: "Workout type" },
+        { selector: "#plannerExperience", label: "Experience level" },
+        { selector: "#plannerMealPreference", label: "Meal preference" },
+        { selector: "#plannerCurrentWeight", label: "Current weight" },
+        { selector: "#plannerHeight", label: "Height" },
+        { selector: "#plannerWorkoutTime", label: "Workout time" },
+        { selector: "#plannerMinutes", label: "Available minutes" },
+        { selector: "#plannerDays", label: "Workout days" },
+        { selector: "#plannerHydration", label: "Hydration goal" },
+        { selector: "#plannerActivityLevel", label: "Activity level" },
+        { selector: "#plannerChallenge", label: "Main challenge" }
+    ];
+
+    const missing = fieldMap.filter((field) => !getInputValue(field.selector));
+    highlightPlannerFields(missing.map((field) => field.selector));
+    return missing;
 }
 
 function renderMongoEventTable(events) {
@@ -728,6 +1231,108 @@ function prependMongoEvent(event) {
     table.innerHTML = `${header}${row}${existingRows}`;
 }
 
+function renderAssistantList(selector, items) {
+    const element = document.querySelector(selector);
+    if (!element) {
+        return;
+    }
+
+    element.innerHTML = items.map((item) => `<li>${escapeHtml(item)}</li>`).join("");
+}
+
+function getSelectedMood() {
+    return document.querySelector("#moodGrid .selected")?.dataset.mood || "Strong";
+}
+
+function getReadinessSnapshot() {
+    const energy = Number(document.querySelector("#energyRange")?.value || 7);
+    const focus = Number(document.querySelector("#focusRange")?.value || 8);
+    const recovery = Number(document.querySelector("#recoveryRange")?.value || 6);
+    const readiness = Math.round(((energy + focus + recovery) / 30) * 100);
+
+    return { energy, focus, recovery, readiness };
+}
+
+function buildAssistantGuidance(data) {
+    const preferences = data.user.preferences || {};
+    const aiPlan = data.aiPlan || {};
+    const mood = getSelectedMood();
+    const { readiness, energy, recovery } = getReadinessSnapshot();
+
+    if (!data.profileComplete) {
+        return {
+              headline: `${data.user.name}, complete your profile to unlock accurate advice`,
+              summary: "Right now the assistant will only trust your explicit inputs. Add your body stats, workout timing, activity level, hydration, and main challenge first.",
+              doItems: [
+                  "Open Customize Plan and fill current weight and height.",
+                  "Set workout time, available minutes, and workout days.",
+                  "Choose activity level, hydration goal, and your main challenge."
+              ],
+              avoidItems: [
+                  "Avoid relying on generic advice before your profile is complete.",
+                  "Avoid changing your goal every day without updating the planner.",
+                  "Avoid skipping the main challenge field because that drives the tone of your plan."
+              ],
+              recoveryItems: [
+                  "Recovery guidance will unlock after you save the complete planner.",
+                  "Sleep and hydration rules will appear from your actual inputs."
+              ],
+            nextMove: "Open Customize Plan now and complete the missing profile fields."
+        };
+    }
+    const doItems = [...(aiPlan.actionItems || [])];
+    const avoidItems = [...(aiPlan.avoidItems || [])];
+    const recoveryItems = [...(aiPlan.recoveryItems || [])];
+    let headline = aiPlan.headline || `${data.user.name}, your AI-managed day is ready`;
+    let summary = aiPlan.summary || "Your dashboard is now working from your saved inputs.";
+    let nextMove = aiPlan.schedule?.[0]
+        ? `${aiPlan.schedule[0].time}: ${aiPlan.schedule[0].title}. ${aiPlan.schedule[0].detail}`
+        : `Start your next planned block at ${preferences.workoutTime || "18:00"}.`;
+
+    if (readiness < 55) {
+        headline = `${data.user.name}, today should stay lighter than planned`;
+        summary = `${summary} Your readiness is low, so the AI is reducing intensity and focusing on consistency.`;
+        doItems.unshift("Use the lighter version of the plan and shorten the main intensity block.");
+        avoidItems.unshift("Avoid forcing a hard workout just because it was scheduled.");
+        nextMove = "Do mobility, hit your hydration, and keep the first half of the session easy.";
+    } else if (mood === "Tired") {
+        summary = `${summary} You marked yourself tired, so the AI is prioritizing execution over intensity.`;
+        doItems.unshift("Start gently and let energy build during the session.");
+        avoidItems.unshift("Avoid an all-or-nothing mindset when energy is low.");
+    } else if (mood === "Focused") {
+        doItems.unshift("Use your focus for clean reps, no distraction, and timely transitions.");
+    } else if (mood === "Calm") {
+        recoveryItems.unshift("Keep your breathing slow and recovery blocks intentional.");
+    }
+
+    return {
+        headline,
+        summary,
+          doItems: doItems.slice(0, 5),
+          avoidItems: avoidItems.slice(0, 5),
+          recoveryItems: recoveryItems.slice(0, 4),
+          nextMove
+      };
+}
+
+function renderAssistantGuidance(data) {
+    if (!data) {
+        return;
+    }
+
+    const guidance = buildAssistantGuidance(data);
+    updateText("#assistantHeadline", guidance.headline);
+    updateText("#assistantSummary", guidance.summary);
+    updateText("#assistantNextMove", guidance.nextMove);
+    renderAssistantList("#assistantDoList", guidance.doItems);
+    renderAssistantList("#assistantAvoidList", guidance.avoidItems);
+    renderAssistantList("#assistantRecoveryList", guidance.recoveryItems || ["Recovery guidance will appear here."]);
+}
+
+function refreshAssistantGuidance() {
+    renderAssistantGuidance(currentDashboardData);
+}
+
 function setWorkoutRunning() {
     const timer = document.querySelector("#workoutTimer");
     const workoutItems = document.querySelectorAll("#workoutList div");
@@ -791,6 +1396,7 @@ function updateReadinessState() {
 
     saveDashboardState({ energy, focus, recovery });
     saveReadinessInteraction(energy, focus, recovery, readiness);
+    refreshAssistantGuidance();
 }
 
 function updateBodyBattery(readiness = 76, recovery = 6) {
@@ -853,6 +1459,7 @@ function setupHydrationTracker() {
             if (count > 0) {
                 updateCoachMessage(`Hydration updated: ${count} of 8 glasses complete. Keep the momentum going.`);
             }
+            refreshAssistantGuidance();
             saveDashboardInteraction("hydration_update", "Updated water tracker", {
                 glasses: count,
                 updatedAt: new Date().toISOString()
@@ -1009,6 +1616,7 @@ function setupFocusTimer() {
 }
 
 function setupStreakMap() {
+    const state = getDashboardState();
     const buttons = document.querySelectorAll("#streakMap button");
     if (!buttons.length || document.body.dataset.streakMapBound) {
         return;
@@ -1016,10 +1624,19 @@ function setupStreakMap() {
 
     document.body.dataset.streakMapBound = "true";
 
+    if (Array.isArray(state.activeWeekPattern) && state.activeWeekPattern.length === buttons.length) {
+        buttons.forEach((button, index) => {
+            button.classList.toggle("active", Boolean(state.activeWeekPattern[index]));
+        });
+    }
+
     function paint() {
         const activeCount = [...buttons].filter((button) => button.classList.contains("active")).length;
         updateText("#streakMapStatus", `${activeCount} / 7 active`);
-        saveDashboardState({ activeWeekDays: activeCount });
+        saveDashboardState({
+            activeWeekDays: activeCount,
+            activeWeekPattern: [...buttons].map((button) => button.classList.contains("active"))
+        });
     }
 
     buttons.forEach((button) => {
@@ -1038,6 +1655,7 @@ function setupStreakMap() {
 }
 
 function setupMoodCheck() {
+    const state = getDashboardState();
     const buttons = document.querySelectorAll("#moodGrid button");
     if (!buttons.length || document.body.dataset.moodBound) {
         return;
@@ -1060,6 +1678,7 @@ function setupMoodCheck() {
             updateText("#moodCoach", moodNotes[mood]);
             updateCoachMessage(moodNotes[mood]);
             saveDashboardState({ mood });
+            refreshAssistantGuidance();
             saveDashboardInteraction("mood_update", "Updated mood check", {
                 mood,
                 note: moodNotes[mood],
@@ -1067,6 +1686,13 @@ function setupMoodCheck() {
             });
         });
     });
+
+    if (state.mood) {
+        const selected = [...buttons].find((button) => button.dataset.mood === state.mood);
+        if (selected) {
+            selected.click();
+        }
+    }
 }
 
 function hydrateEnhancedDashboard(data) {
@@ -1099,7 +1725,9 @@ function hydrateEnhancedDashboard(data) {
     }
 
     updateCoachMessage(
-        `${data.user.name}, your ${String(data.user.goal).toLowerCase()} plan looks strong today. Keep ${String(data.user.preferences.preferredWorkout).toLowerCase()} intentional and recover well after.`
+        data.profileComplete
+            ? `${data.user.name}, your plan is now being shaped from your real inputs. Keep ${String(data.user.preferences.preferredWorkout).toLowerCase()} intentional and respect your main challenge: ${String(data.user.preferences.primaryChallenge).toLowerCase()}.`
+            : `${data.user.name}, fill in your real profile details first so the assistant can guide you from your actual routine.`
     );
 }
 
@@ -1145,9 +1773,81 @@ async function handleDashboardAction(action) {
     }
 }
 
+function buildPlanExportPayload() {
+    const data = currentDashboardData || {};
+    return {
+        exportedAt: new Date().toISOString(),
+        user: data.user || {},
+        profileComplete: Boolean(data.profileComplete),
+        summary: data.summary || {},
+        profileInsights: data.profileInsights || {},
+        habitSignals: data.habitSignals || [],
+        aiPlan: data.aiPlan || {},
+        schedule: data.schedule || [],
+        nutrition: data.nutrition || {},
+        workout: {
+            title: data.workoutTitle || "",
+            duration: data.workoutDuration || "",
+            tasks: data.workout || []
+        }
+    };
+}
+
+function exportDashboardPlan() {
+    const payload = buildPlanExportPayload();
+    const content = JSON.stringify(payload, null, 2);
+    const blob = new Blob([content], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const datePart = new Date().toISOString().slice(0, 10);
+    link.href = url;
+    link.download = `smart-tracker-plan-${datePart}.json`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+}
+
+function resetDashboardDayState() {
+    if (!window.confirm("Reset today's dashboard interactions, mood, hydration, and focus?")) {
+        return false;
+    }
+
+    localStorage.removeItem("smartDashboardState");
+    return true;
+}
+
+async function copyAssistantAdvice() {
+    const headline = document.querySelector("#assistantHeadline")?.textContent || "";
+    const summary = document.querySelector("#assistantSummary")?.textContent || "";
+    const nextMove = document.querySelector("#assistantNextMove")?.textContent || "";
+    const lines = [
+        headline,
+        "",
+        summary,
+        "",
+        `Next: ${nextMove}`
+    ];
+    const text = lines.join("\n").trim();
+
+    if (!text) {
+        throw new Error("No assistant advice found to copy.");
+    }
+
+    if (!navigator.clipboard?.writeText) {
+        throw new Error("Clipboard access not available in this browser.");
+    }
+
+    await navigator.clipboard.writeText(text);
+}
+
 document.querySelectorAll("[data-dashboard-action]").forEach((button) => {
-    button.addEventListener("click", () => {
-        handleDashboardAction(button.dataset.dashboardAction);
+    button.addEventListener("click", async () => {
+        await withButtonLoading(
+            button,
+            () => handleDashboardAction(button.dataset.dashboardAction),
+            "Working..."
+        );
     });
 });
 
@@ -1205,7 +1905,91 @@ document.querySelector("#plannerModal")?.addEventListener("click", (event) => {
         });
     }
 });
-document.querySelector("#completeWorkoutButton")?.addEventListener("click", completeWorkout);
+window.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") {
+        return;
+    }
+
+    closeModal("#mealModal");
+    closeModal("#plannerModal");
+    closeModal("#paymentModal");
+    closeModal("#socialLoginModal");
+});
+document.querySelector("#completeWorkoutButton")?.addEventListener("click", async (event) => {
+    await withButtonLoading(event.currentTarget, completeWorkout, "Saving...");
+});
+document.querySelector("#refreshAssistantButton")?.addEventListener("click", async () => {
+    try {
+        const data = await postDashboardAction("/api/dashboard/ai-refresh");
+        if (data?.dashboard) {
+            renderDashboard(data.dashboard);
+        } else {
+            refreshAssistantGuidance();
+        }
+
+        updateCoachMessage("Assistant refreshed from your saved profile data.");
+        await saveDashboardInteraction("assistant_refresh", "Refreshed AI assistant advice", {
+            source: data?.dashboard?.aiSource || "Rule AI",
+            mood: getSelectedMood(),
+            ...getReadinessSnapshot(),
+            refreshedAt: new Date().toISOString()
+        });
+    } catch (error) {
+        showToast(error.message || "AI refresh failed");
+    }
+});
+document.querySelector("#assistantScheduleButton")?.addEventListener("click", async () => {
+    scrollToPanel("#schedule");
+    updateCoachMessage("Use the schedule timing as your anchor. Start the next block right on time.");
+    await saveDashboardInteraction("assistant_schedule_view", "Opened schedule from AI assistant", {
+        clickedAt: new Date().toISOString()
+    });
+});
+document.querySelector("#copyAdviceButton")?.addEventListener("click", async (event) => {
+    try {
+        await withButtonLoading(event.currentTarget, copyAssistantAdvice, "Copying...");
+        showToast("AI advice copied.");
+        await saveDashboardInteraction("assistant_copy", "Copied assistant advice", {
+            copiedAt: new Date().toISOString()
+        });
+    } catch (error) {
+        showToast(error.message);
+    }
+});
+document.querySelector("#profileUpdateButton")?.addEventListener("click", () => {
+    openModal("#plannerModal");
+    saveDashboardInteraction("planner_open", "Opened planner from profile panel", {
+        openedAt: new Date().toISOString()
+    });
+});
+document.querySelector("#realityPlannerButton")?.addEventListener("click", () => {
+    openModal("#plannerModal");
+    saveDashboardInteraction("planner_open", "Opened planner from reality panel", {
+        openedAt: new Date().toISOString()
+    });
+});
+document.querySelector("#resetDayButton")?.addEventListener("click", async (event) => {
+    if (!resetDashboardDayState()) {
+        return;
+    }
+
+    await withButtonLoading(event.currentTarget, async () => {
+        showToast("Day data reset. Reloading dashboard...");
+        await saveDashboardInteraction("day_reset", "Reset day dashboard state", {
+            resetAt: new Date().toISOString()
+        });
+        window.location.reload();
+    }, "Resetting...");
+});
+document.querySelector("#exportPlanButton")?.addEventListener("click", async (event) => {
+    await withButtonLoading(event.currentTarget, async () => {
+        exportDashboardPlan();
+        showToast("Plan exported as JSON.");
+        await saveDashboardInteraction("plan_export", "Exported dashboard plan", {
+            exportedAt: new Date().toISOString()
+        });
+    }, "Exporting...");
+});
 document.querySelector("#logoutButton")?.addEventListener("click", async () => {
     await saveDashboardInteraction("logout", "Clicked logout", {
         clickedAt: new Date().toISOString()
@@ -1221,8 +2005,21 @@ if (plannerForm) {
         event.preventDefault();
         const token = getToken();
         const formData = new FormData(plannerForm);
+        const plannerMessage = document.querySelector("#plannerMessage");
+        const missing = validatePlannerForm();
+
+        if (missing.length) {
+            setMessage(
+                plannerMessage,
+                `Fill these fields first: ${missing.map((item) => item.label).join(", ")}`,
+                "error"
+            );
+            showToast("Complete all required planner fields first.");
+            return;
+        }
 
         try {
+            setMessage(plannerMessage, "Saving your profile and rebuilding the dashboard...", "success");
             const data = await apiRequest("/api/dashboard/preferences", {
                 method: "PUT",
                 headers: {
@@ -1233,19 +2030,41 @@ if (plannerForm) {
                     preferredWorkout: formData.get("preferredWorkout"),
                     experienceLevel: formData.get("experienceLevel"),
                     mealPreference: formData.get("mealPreference"),
+                    age: Number(formData.get("age")),
+                    occupation: formData.get("occupation"),
                     wakeTime: formData.get("wakeTime"),
                     workoutTime: formData.get("workoutTime"),
                     sleepTime: formData.get("sleepTime"),
+                    dietaryPreference: formData.get("dietaryPreference"),
+                    schedulePreference: formData.get("schedulePreference"),
                     availableMinutes: Number(formData.get("availableMinutes")),
                     workoutDays: Number(formData.get("workoutDays")),
-                    hydrationGoal: Number(formData.get("hydrationGoal"))
+                    hydrationGoal: Number(formData.get("hydrationGoal")),
+                    stressLevel: formData.get("stressLevel"),
+                    stepGoal: Number(formData.get("stepGoal")),
+                    currentWeight: Number(formData.get("currentWeight")),
+                    targetWeight: Number(formData.get("targetWeight")),
+                    height: Number(formData.get("height")),
+                    sleepHours: Number(formData.get("sleepHours")),
+                    activityLevel: formData.get("activityLevel"),
+                    focusArea: formData.get("focusArea"),
+                    equipmentAccess: formData.get("equipmentAccess"),
+                    primaryChallenge: formData.get("primaryChallenge")
                 })
             });
 
             renderDashboard(data.dashboard);
+            saveDashboardState({
+                latestProfileSave: data.dashboard?.dashboardEvents?.[0]?.createdAt || new Date().toISOString()
+            });
+            setMessage(plannerMessage, "Profile saved. Dashboard updated from your inputs.", "success");
             closeModal("#plannerModal");
             showToast(data.message);
+            updateCoachMessage("Your new inputs are saved. The dashboard and assistant are now reflecting your updated profile.");
+            scrollToPanel("#profileSnapshotPanel");
+            window.setTimeout(() => scrollToPanel("#assistantPanel"), 500);
         } catch (error) {
+            setMessage(plannerMessage, error.message, "error");
             showToast(error.message);
         }
     });

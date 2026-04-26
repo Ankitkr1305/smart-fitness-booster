@@ -3160,6 +3160,248 @@ body.game-home {
     font-weight: 700;
 }
 
+.assistant-panel {
+    background:
+        radial-gradient(circle at top right, rgba(124, 58, 237, 0.12), transparent 28%),
+        linear-gradient(180deg, #ffffff 0%, #fbf7ff 100%);
+    grid-column: 1 / -1;
+}
+
+.dashboard-snapshot-grid {
+    display: grid;
+    gap: 24px;
+    grid-template-columns: 1.05fr 0.95fr;
+    margin: 0 auto 28px;
+    max-width: 1360px;
+    padding: 0 8%;
+}
+
+.profile-panel,
+.realism-panel {
+    min-height: 100%;
+}
+
+.profile-facts,
+.reality-grid {
+    display: grid;
+    gap: 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.profile-facts div,
+.reality-grid div {
+    background: rgba(244, 237, 255, 0.72);
+    border: 1px solid rgba(138, 43, 226, 0.1);
+    border-radius: 18px;
+    display: grid;
+    gap: 6px;
+    padding: 16px;
+}
+
+.profile-facts span,
+.reality-grid span {
+    color: #6f7890;
+    font-size: 0.9rem;
+}
+
+.profile-facts strong,
+.reality-grid strong {
+    color: #1b2335;
+    font-size: 1.02rem;
+    line-height: 1.4;
+}
+
+.reality-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+.reality-meta span {
+    background: rgba(20, 27, 47, 0.06);
+    border-radius: 999px;
+    color: #4f5970;
+    font-size: 0.92rem;
+    font-weight: 700;
+    padding: 10px 14px;
+}
+
+.sync-grid,
+.roadmap-list {
+    display: grid;
+    gap: 14px;
+}
+
+.ai-schedule-list {
+    display: grid;
+    gap: 12px;
+}
+
+.ai-schedule-list div {
+    background: rgba(244, 237, 255, 0.58);
+    border: 1px solid rgba(138, 43, 226, 0.08);
+    border-radius: 18px;
+    display: grid;
+    gap: 6px;
+    grid-template-columns: 96px 1fr;
+    padding: 14px 16px;
+}
+
+.ai-schedule-list time {
+    color: #6d2ae8;
+    font-size: 0.95rem;
+    font-weight: 800;
+}
+
+.ai-schedule-list span,
+.ai-meal-grid span {
+    color: #61708b;
+    line-height: 1.6;
+}
+
+.ai-schedule-list strong,
+.ai-meal-grid strong {
+    color: #182134;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.ai-meal-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.ai-meal-grid div {
+    background: linear-gradient(180deg, rgba(255, 252, 241, 0.95) 0%, rgba(255, 248, 226, 1) 100%);
+    border: 1px solid rgba(255, 196, 72, 0.18);
+    border-radius: 18px;
+    padding: 15px 16px;
+}
+
+.sync-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.sync-grid div,
+.roadmap-list div {
+    background: rgba(244, 237, 255, 0.62);
+    border: 1px solid rgba(138, 43, 226, 0.08);
+    border-radius: 18px;
+    display: grid;
+    gap: 6px;
+    padding: 16px;
+}
+
+.sync-grid span,
+.roadmap-list span {
+    color: #667085;
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+.sync-grid strong,
+.roadmap-list strong {
+    color: #172033;
+    font-size: 1rem;
+    line-height: 1.45;
+}
+
+.assistant-summary {
+    color: #5f6980;
+    font-size: 1rem;
+    line-height: 1.7;
+    margin: 4px 0 18px;
+}
+
+.assistant-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: 1fr 1fr;
+}
+
+.assistant-grid-secondary {
+    grid-template-columns: 1fr;
+    margin-top: 18px;
+}
+
+.assistant-card {
+    border-radius: 22px;
+    padding: 18px 18px 16px;
+}
+
+.assistant-card.do {
+    background: linear-gradient(180deg, rgba(237, 250, 241, 0.95) 0%, rgba(231, 247, 236, 0.98) 100%);
+    border: 1px solid rgba(58, 174, 92, 0.12);
+}
+
+.assistant-card.avoid {
+    background: linear-gradient(180deg, rgba(255, 246, 247, 0.98) 0%, rgba(255, 239, 241, 1) 100%);
+    border: 1px solid rgba(232, 84, 112, 0.12);
+}
+
+.assistant-card.recovery {
+    background: linear-gradient(180deg, rgba(240, 248, 255, 0.98) 0%, rgba(233, 244, 255, 1) 100%);
+    border: 1px solid rgba(84, 144, 232, 0.12);
+}
+
+.assistant-card h3 {
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+.assistant-card ul {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding-left: 18px;
+}
+
+.assistant-card li {
+    color: #4f5970;
+    line-height: 1.6;
+}
+
+.assistant-footer {
+    align-items: end;
+    display: flex;
+    gap: 18px;
+    justify-content: space-between;
+    margin-top: 18px;
+}
+
+.assistant-footer strong {
+    color: #161f34;
+    display: block;
+    line-height: 1.5;
+    max-width: 620px;
+}
+
+.assistant-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.planner-grid-full {
+    grid-column: 1 / -1;
+}
+
+.planner-helper {
+    color: #667085;
+    line-height: 1.65;
+    margin-bottom: 16px;
+}
+
+.planner-card .form-message {
+    margin-bottom: 6px;
+}
+
+.input-error {
+    border-color: #ef476f !important;
+    box-shadow: 0 0 0 3px rgba(239, 71, 111, 0.14);
+}
+
 #confirmQrPaymentButton,
 #generateQrButton,
 #payNowButton {
@@ -3196,5 +3438,89 @@ body.game-home {
 
     .payment-qr-panel img {
         max-width: 190px;
+    }
+
+    .dashboard-snapshot-grid,
+    .assistant-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .ai-schedule-list div {
+        grid-template-columns: 1fr;
+    }
+
+    .assistant-footer,
+    .assistant-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .profile-facts,
+    .reality-grid,
+    .sync-grid {
+        grid-template-columns: 1fr;
+    }
+}
+.completion-meter {
+    width: 100%;
+    height: 14px;
+    border-radius: 999px;
+    background: rgba(122, 92, 255, 0.12);
+    overflow: hidden;
+    margin: 1.2rem 0 1rem;
+}
+
+.completion-meter-fill {
+    height: 100%;
+    width: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, #5b35ea 0%, #30b68a 100%);
+    transition: width 0.35s ease;
+}
+
+.completion-checklist,
+.targets-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+}
+
+.completion-checklist span,
+.targets-grid div {
+    padding: 1rem 1.1rem;
+    border-radius: 22px;
+    border: 1px solid rgba(117, 87, 255, 0.14);
+    background: rgba(245, 241, 255, 0.92);
+}
+
+.completion-checklist span {
+    display: block;
+    font-weight: 700;
+    color: #4f5676;
+    text-transform: capitalize;
+}
+
+.completion-checklist .is-complete {
+    color: #0b8a61;
+    background: rgba(223, 249, 239, 0.92);
+    border-color: rgba(11, 138, 97, 0.16);
+}
+
+.targets-grid span {
+    display: block;
+    margin-bottom: 0.45rem;
+    font-size: 0.95rem;
+    color: #64708f;
+}
+
+.targets-grid strong {
+    font-size: 1.15rem;
+    color: #101935;
+}
+
+@media (max-width: 760px) {
+    .completion-checklist,
+    .targets-grid {
+        grid-template-columns: 1fr;
     }
 }

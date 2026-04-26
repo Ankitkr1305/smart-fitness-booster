@@ -75,6 +75,62 @@ const userSchema = new mongoose.Schema(
       hydrationGoal: {
         type: Number,
         default: 3
+      },
+      currentWeight: {
+        type: Number,
+        default: null
+      },
+      targetWeight: {
+        type: Number,
+        default: null
+      },
+      height: {
+        type: Number,
+        default: null
+      },
+      sleepHours: {
+        type: Number,
+        default: null
+      },
+      activityLevel: {
+        type: String,
+        default: ""
+      },
+      equipmentAccess: {
+        type: String,
+        default: ""
+      },
+      primaryChallenge: {
+        type: String,
+        default: ""
+      },
+      age: {
+        type: Number,
+        default: null
+      },
+      occupation: {
+        type: String,
+        default: ""
+      },
+      dietaryPreference: {
+        type: String,
+        default: ""
+      },
+      schedulePreference: {
+        type: String,
+        default: ""
+      },
+      stressLevel: {
+        type: String,
+        default: ""
+      },
+      stepGoal: {
+        type: Number,
+        default: null
+      },
+      focusArea: {
+        type: String,
+        default: ""
       }
     }
   },

@@ -100,6 +100,151 @@
             </article>
         </section>
 
+        <section class="dashboard-snapshot-grid reveal">
+            <article class="dash-panel completion-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Profile completion</p>
+                        <h2>How ready is your plan?</h2>
+                    </div>
+                    <span class="status-pill" id="completionStatus">0% complete</span>
+                </div>
+                <div class="completion-meter">
+                    <div class="completion-meter-fill" id="completionMeterFill"></div>
+                </div>
+                <p class="dash-note" id="completionNote">Complete the planner once and your dashboard will switch from generic to profile-driven guidance.</p>
+                <div class="completion-checklist" id="completionChecklist">
+                    <span>Body stats pending</span>
+                    <span>Schedule pending</span>
+                    <span>Recovery inputs pending</span>
+                </div>
+            </article>
+
+            <article class="dash-panel targets-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Today's targets</p>
+                        <h2>Your non-negotiables</h2>
+                    </div>
+                    <span class="status-pill purple" id="targetsFocusLabel">Daily focus</span>
+                </div>
+                <div class="targets-grid" id="targetsGrid">
+                    <div><span>Workout</span><strong>Save your plan</strong></div>
+                    <div><span>Hydration</span><strong>0L</strong></div>
+                    <div><span>Sleep</span><strong>0h</strong></div>
+                    <div><span>Steps</span><strong>0</strong></div>
+                </div>
+                <p class="dash-note" id="targetsNote">These targets update from your saved planner so you always know what matters most today.</p>
+            </article>
+        </section>
+
+        <section class="dashboard-snapshot-grid reveal">
+            <article class="dash-panel profile-panel" id="profileSnapshotPanel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Profile snapshot</p>
+                        <h2>Inputs driving your plan</h2>
+                    </div>
+                    <span class="status-pill" id="profileStatus">Profile incomplete</span>
+                </div>
+                <div class="profile-facts" id="profileFacts">
+                    <div><span>Current weight</span><strong>Not set</strong></div>
+                    <div><span>Target weight</span><strong>Not set</strong></div>
+                    <div><span>Height</span><strong>Not set</strong></div>
+                    <div><span>BMI</span><strong>Pending</strong></div>
+                </div>
+                <p class="dash-note" id="profileSummary">Complete your full planner inputs so the assistant can stop guessing and start guiding from your real profile.</p>
+                <div class="assistant-actions">
+                    <button type="button" class="btn btn-primary" id="profileUpdateButton">Update Inputs</button>
+                </div>
+            </article>
+
+            <article class="dash-panel realism-panel" id="realityCheckPanel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Reality check</p>
+                        <h2>Constraints and recovery</h2>
+                    </div>
+                    <span class="status-pill purple" id="recoveryLabel">Set your profile</span>
+                </div>
+                <div class="reality-grid" id="habitSignalGrid">
+                    <div><span>Hydration</span><strong>Not set</strong></div>
+                    <div><span>Recovery</span><strong>Not set</strong></div>
+                    <div><span>Constraint</span><strong>Not set</strong></div>
+                </div>
+                <div class="reality-meta">
+                    <span id="paceLabel">Plan pace pending</span>
+                    <span id="activityLevelLabel">Activity level pending</span>
+                    <span id="equipmentLabel">Equipment not selected</span>
+                </div>
+                <div class="assistant-actions">
+                    <button type="button" class="btn secondary-action" id="realityPlannerButton">Fix My Plan</button>
+                </div>
+            </article>
+        </section>
+
+        <section class="dashboard-snapshot-grid reveal">
+            <article class="dash-panel sync-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Plan sync</p>
+                        <h2>Saved profile state</h2>
+                    </div>
+                    <span class="status-pill purple" id="planSyncStatus">Awaiting inputs</span>
+                </div>
+                <div class="sync-grid" id="syncGrid">
+                    <div><span>Workout slot</span><strong>Not set</strong></div>
+                    <div><span>Meal style</span><strong>Not set</strong></div>
+                    <div><span>Main challenge</span><strong>Not set</strong></div>
+                    <div><span>Last profile save</span><strong>Not saved yet</strong></div>
+                </div>
+                <p class="dash-note" id="syncNote">When you save Customize Plan, this section will reflect your latest profile-driven setup.</p>
+            </article>
+
+            <article class="dash-panel roadmap-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">Action roadmap</p>
+                        <h2>Your next 3 focus points</h2>
+                    </div>
+                    <span class="status-pill" id="roadmapStatus">Input-based</span>
+                </div>
+                <div class="roadmap-list" id="roadmapList">
+                    <div><strong>Complete your profile</strong><span>Add body stats and constraints first.</span></div>
+                    <div><strong>Save your routine</strong><span>Set a workout slot and hydration target.</span></div>
+                    <div><strong>Refresh your assistant</strong><span>See personalized actions after saving.</span></div>
+                </div>
+            </article>
+        </section>
+
+        <section class="dashboard-snapshot-grid reveal">
+            <article class="dash-panel ai-schedule-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">AI schedule</p>
+                        <h2>Planned day from your profile</h2>
+                    </div>
+                    <span class="status-pill purple" id="aiFocusArea">General fitness</span>
+                </div>
+                <div class="ai-schedule-list" id="aiScheduleList">
+                    <div><time>07:00</time><span>Fill your profile to unlock your timed plan.</span></div>
+                </div>
+            </article>
+
+            <article class="dash-panel ai-meals-panel">
+                <div class="panel-heading">
+                    <div>
+                        <p class="eyebrow">AI nutrition</p>
+                        <h2>Meal timing and fuel</h2>
+                    </div>
+                    <span class="status-pill" id="aiCaloriesTarget">0 kcal</span>
+                </div>
+                <div class="ai-meal-grid" id="aiMealGrid">
+                    <div><strong>Breakfast</strong><span>Add your profile to generate meals.</span></div>
+                </div>
+            </article>
+        </section>
+
         <section class="dashboard-creative-grid reveal">
             <article class="dash-panel readiness-panel">
                 <div class="panel-heading">
@@ -256,6 +401,53 @@
             </aside>
 
             <div class="dashboard-main-grid">
+                <article class="dash-panel assistant-panel reveal" id="assistantPanel">
+                    <div class="panel-heading">
+                        <div>
+                            <p class="eyebrow">AI assistant</p>
+                            <h2 id="assistantHeadline">Your plan is balanced for today</h2>
+                        </div>
+                        <span class="status-pill purple">Smart AI</span>
+                    </div>
+                    <p class="assistant-summary" id="assistantSummary">Your saved goal, workout preference, hydration target, and current energy are being used to shape the next best steps.</p>
+                    <div class="assistant-grid">
+                        <div class="assistant-card do">
+                            <h3>Do This</h3>
+                            <ul id="assistantDoList">
+                                <li>Start with your warm-up and keep your form sharp.</li>
+                                <li>Hit your hydration target before the workout block.</li>
+                                <li>Keep today's meals aligned with your goal.</li>
+                            </ul>
+                        </div>
+                        <div class="assistant-card avoid">
+                            <h3>Avoid This</h3>
+                            <ul id="assistantAvoidList">
+                                <li>Don't skip recovery when energy feels low.</li>
+                                <li>Avoid random snacking after the workout.</li>
+                                <li>Don't miss your sleep wind-down window.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="assistant-grid assistant-grid-secondary">
+                        <div class="assistant-card recovery">
+                            <h3>Recovery Rules</h3>
+                            <ul id="assistantRecoveryList">
+                                <li>Sleep and hydration guidance will show here.</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="assistant-footer">
+                        <div>
+                            <p class="eyebrow">Next best move</p>
+                            <strong id="assistantNextMove">Open your schedule and start the first planned action on time.</strong>
+                        </div>
+                        <div class="assistant-actions">
+                            <button type="button" class="btn btn-primary" id="refreshAssistantButton">Refresh Advice</button>
+                            <button type="button" class="btn secondary-action" id="assistantScheduleButton">See Schedule</button>
+                        </div>
+                    </div>
+                </article>
+
                 <article class="dash-panel progress-panel reveal" id="progress">
                     <div class="panel-heading">
                         <div>
@@ -402,7 +594,9 @@
             <button type="button" class="modal-close" id="closePlannerModal" aria-label="Close planner form">x</button>
             <p class="eyebrow">Personalize dashboard</p>
             <h2 id="plannerModalTitle">Create your plan from your inputs</h2>
+            <p class="planner-helper">Fill every field below. As soon as you save, your profile snapshot, roadmap, and AI assistant will update from these exact inputs.</p>
             <form id="plannerForm">
+                <p class="form-message" id="plannerMessage" aria-live="polite"></p>
                 <div class="planner-grid">
                     <div>
                         <label for="plannerGoal">Goal</label>
@@ -439,6 +633,39 @@
                         </select>
                     </div>
                     <div>
+                        <label for="plannerAge">Age</label>
+                        <input type="number" id="plannerAge" name="age" min="12" max="80" required>
+                    </div>
+                    <div>
+                        <label for="plannerOccupation">Occupation / routine</label>
+                        <input type="text" id="plannerOccupation" name="occupation" placeholder="Student, Office work, etc." required>
+                    </div>
+                    <div>
+                        <label for="plannerCurrentWeight">Current weight (kg)</label>
+                        <input type="number" id="plannerCurrentWeight" name="currentWeight" min="20" max="250" required>
+                    </div>
+                    <div>
+                        <label for="plannerTargetWeight">Target weight (kg)</label>
+                        <input type="number" id="plannerTargetWeight" name="targetWeight" min="20" max="250">
+                    </div>
+                    <div>
+                        <label for="plannerHeight">Height (cm)</label>
+                        <input type="number" id="plannerHeight" name="height" min="100" max="250" required>
+                    </div>
+                    <div>
+                        <label for="plannerSleepHours">Sleep hours target</label>
+                        <input type="number" id="plannerSleepHours" name="sleepHours" min="4" max="12" step="0.5" required>
+                    </div>
+                    <div>
+                        <label for="plannerDietaryPreference">Dietary style</label>
+                        <select id="plannerDietaryPreference" name="dietaryPreference" required>
+                            <option value="">Select</option>
+                            <option>Balanced</option>
+                            <option>Vegetarian</option>
+                            <option>High Protein</option>
+                        </select>
+                    </div>
+                    <div>
                         <label for="plannerWakeTime">Wake time</label>
                         <input type="time" id="plannerWakeTime" name="wakeTime" required>
                     </div>
@@ -449,6 +676,15 @@
                     <div>
                         <label for="plannerSleepTime">Sleep time</label>
                         <input type="time" id="plannerSleepTime" name="sleepTime" required>
+                    </div>
+                    <div>
+                        <label for="plannerSchedulePreference">Best workout window</label>
+                        <select id="plannerSchedulePreference" name="schedulePreference" required>
+                            <option value="">Select</option>
+                            <option>Morning</option>
+                            <option>Afternoon</option>
+                            <option>Evening</option>
+                        </select>
                     </div>
                     <div>
                         <label for="plannerMinutes">Available minutes</label>
@@ -462,12 +698,67 @@
                         <label for="plannerHydration">Hydration goal (L)</label>
                         <input type="number" id="plannerHydration" name="hydrationGoal" min="1" max="6" required>
                     </div>
+                    <div>
+                        <label for="plannerStressLevel">Stress level</label>
+                        <select id="plannerStressLevel" name="stressLevel" required>
+                            <option value="">Select</option>
+                            <option>Low</option>
+                            <option>Moderate</option>
+                            <option>High</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="plannerStepGoal">Step goal</label>
+                        <input type="number" id="plannerStepGoal" name="stepGoal" min="3000" max="25000" required>
+                    </div>
+                    <div>
+                        <label for="plannerActivityLevel">Daily activity level</label>
+                        <select id="plannerActivityLevel" name="activityLevel" required>
+                            <option value="">Select</option>
+                            <option>Sedentary</option>
+                            <option>Light</option>
+                            <option>Moderate</option>
+                            <option>Very Active</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="plannerFocusArea">Main body focus</label>
+                        <select id="plannerFocusArea" name="focusArea" required>
+                            <option value="">Select</option>
+                            <option>Fat loss</option>
+                            <option>Strength</option>
+                            <option>Mobility</option>
+                            <option>Cardio fitness</option>
+                            <option>Upper body</option>
+                            <option>Lower body</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="plannerEquipment">Equipment access</label>
+                        <select id="plannerEquipment" name="equipmentAccess" required>
+                            <option value="">Select</option>
+                            <option>Bodyweight Only</option>
+                            <option>Home Dumbbells</option>
+                            <option>Full Gym</option>
+                        </select>
+                    </div>
+                    <div class="planner-grid-full">
+                        <label for="plannerChallenge">Main challenge right now</label>
+                        <select id="plannerChallenge" name="primaryChallenge" required>
+                            <option value="">Select</option>
+                            <option>Lack of consistency</option>
+                            <option>Low energy</option>
+                            <option>Busy schedule</option>
+                            <option>Food cravings</option>
+                            <option>Poor recovery</option>
+                        </select>
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary">Save My Plan</button>
             </form>
         </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=20260426-2"></script>
 </body>
 </html>
