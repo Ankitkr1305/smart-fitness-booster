@@ -2,6 +2,8 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
+const Activity = require("../models/Activity");
+const DashboardData = require("../models/DashboardData");
 const protect = require("../middleware/authMiddleware");
 
 const router = express.Router();
@@ -70,6 +72,32 @@ function userResponse(user) {
   };
 }
 
+async function trackLoginEvent(user, method = "password") {
+  try {
+    await DashboardData.create({
+      user: user._id,
+      eventType: "user_login",
+      label: "User logged in",
+      payload: {
+        method,
+        streak: user.streak,
+        totalLoginDays: user.totalLoginDays,
+        loggedAt: new Date()
+      },
+      source: "auth"
+    });
+
+    await Activity.create({
+      user: user._id,
+      action: "Logged in",
+      detail: `Login via ${method}.`,
+      category: "auth"
+    });
+  } catch (error) {
+    console.error("Login tracking failed:", error.message);
+  }
+}
+
 router.post("/signup", async (req, res) => {
   try {
     const { fullName, email, password, goal } = req.body;
@@ -97,6 +125,8 @@ router.post("/signup", async (req, res) => {
       streak: 1,
       totalLoginDays: 1
     });
+
+    await trackLoginEvent(user, "signup");
 
     res.status(201).json({
       message: "Account created successfully",
@@ -127,6 +157,7 @@ router.post("/login", async (req, res) => {
     }
 
     await updateLoginStreak(user);
+    await trackLoginEvent(user, "password");
 
     res.json({
       message: "Login successful",
@@ -161,8 +192,10 @@ router.post("/social-login", async (req, res) => {
         streak: 1,
         totalLoginDays: 1
       });
+      await trackLoginEvent(user, `${authProvider.toLowerCase()}_signup`);
     } else {
       await updateLoginStreak(user);
+      await trackLoginEvent(user, authProvider.toLowerCase());
     }
 
     res.json({
