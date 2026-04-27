@@ -13,7 +13,7 @@ const envResult = dotenv.config({ path: localEnvPath });
 const localEnv = envResult.parsed || {};
 
 const app = express();
-const PORT = Number(process.env.PORT || localEnv.PORT || 5000);
+const PORT = Number(process.env.PORT || localEnv.PORT || 5001);
 const MONGO_URI = process.env.MONGO_URI || localEnv.MONGO_URI || "mongodb://127.0.0.1:27017/smart_tracker_booster";
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || localEnv.FRONTEND_ORIGIN || `http://localhost:${PORT}`;
 const frontendPath = path.join(__dirname, "..", "frontend");
